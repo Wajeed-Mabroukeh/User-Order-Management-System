@@ -1,0 +1,16 @@
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven / Java
+backend/target/
+backend/src/main/frontend/generated/
+
+# Env / secrets
+.env
+*.local
