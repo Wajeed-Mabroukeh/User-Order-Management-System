@@ -2,13 +2,15 @@ package com.user_managment.backend.Service;
 
 import com.user_managment.backend.Dto.CreateOrderRequest;
 import com.user_managment.backend.Dto.OrderResponse;
+import com.user_managment.backend.Dto.OrdersPageResponse;
 import com.user_managment.backend.Entity.Order;
 import com.user_managment.backend.Entity.User;
 import com.user_managment.backend.Repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,10 +29,17 @@ public class OrderService {
         return OrderResponse.fromOrder(savedOrder);
     }
 
-    public List<OrderResponse> getOrdersForCurrentUser(User authenticatedUser) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(authenticatedUser.getId())
-                .stream()
-                .map(OrderResponse::fromOrder)
-                .toList();
+    public OrdersPageResponse getOrdersForCurrentUser(User authenticatedUser, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> ordersPage = orderRepository.findByUserId(authenticatedUser.getId(), pageable);
+
+        return new OrdersPageResponse(
+                ordersPage.getContent().stream().map(OrderResponse::fromOrder).toList(),
+                ordersPage.getNumber(),
+                ordersPage.getSize(),
+                ordersPage.getTotalElements(),
+                ordersPage.getTotalPages(),
+                ordersPage.hasNext()
+        );
     }
 }

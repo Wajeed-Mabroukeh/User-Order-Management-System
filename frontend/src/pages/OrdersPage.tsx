@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, UIEvent, WheelEvent, useCallback, useEffect, useRef, useState } from "react";
 import Alert from "../components/ui/Alert";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -7,6 +7,8 @@ import Loader from "../components/ui/Loader";
 import { getErrorMessage } from "../services/http";
 import { orderApi } from "../services/orderApi";
 import { Order } from "../types/order";
+
+const ORDERS_PAGE_SIZE = 5;
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -25,32 +27,92 @@ function formatCurrency(value: number): string {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [nextPage, setNextPage] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [hasMoreOrders, setHasMoreOrders] = useState(true);
   const [itemName, setItemName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+  const isLoadingMoreRef = useRef(false);
 
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const [loadError, setLoadError] = useState("");
   const [createError, setCreateError] = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setIsLoadingOrders(true);
     setLoadError("");
     try {
-      const response = await orderApi.getMyOrders();
-      setOrders(response);
+      const response = await orderApi.getMyOrders(0, ORDERS_PAGE_SIZE);
+      setOrders(response.content);
+      setNextPage(response.page + 1);
+      setTotalOrders(response.totalElements);
+      setHasMoreOrders(response.hasNext);
     } catch (requestError) {
       setLoadError(getErrorMessage(requestError));
+      setHasMoreOrders(false);
     } finally {
       setIsLoadingOrders(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadOrders();
-  }, []);
+  }, [loadOrders]);
+
+  const loadMoreOrders = useCallback(async () => {
+    if (isLoadingOrders || !hasMoreOrders || isLoadingMoreRef.current) {
+      return;
+    }
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+    setLoadError("");
+
+    try {
+      const response = await orderApi.getMyOrders(nextPage, ORDERS_PAGE_SIZE);
+      setOrders((previous) => [...previous, ...response.content]);
+      setNextPage(response.page + 1);
+      setTotalOrders(response.totalElements);
+      setHasMoreOrders(response.hasNext);
+    } catch (requestError) {
+      setLoadError(getErrorMessage(requestError));
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, [hasMoreOrders, isLoadingOrders, nextPage]);
+
+  const handleOrdersScroll = (event: UIEvent<HTMLDivElement>) => {
+    if (!hasMoreOrders) {
+      return;
+    }
+
+    const element = event.currentTarget;
+    const isNearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 24;
+
+    if (isNearBottom) {
+      void loadMoreOrders();
+    }
+  };
+
+  const handleOrdersWheel = (event: WheelEvent<HTMLDivElement>) => {
+    if (!hasMoreOrders || event.deltaY <= 0) {
+      return;
+    }
+
+    const element = event.currentTarget;
+    const hasOverflow = element.scrollHeight > element.clientHeight + 1;
+
+    // If the first page exactly fills the area (no overflow yet),
+    // treat wheel down as "load more" so scrolling can continue.
+    if (!hasOverflow) {
+      void loadMoreOrders();
+    }
+  };
 
   const handleCreateOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -73,14 +135,14 @@ export default function OrdersPage() {
 
     setIsCreatingOrder(true);
     try {
-      const createdOrder = await orderApi.createOrder({
+      await orderApi.createOrder({
         itemName: normalizedItemName,
         totalAmount: amount
       });
-      setOrders((previous) => [createdOrder, ...previous]);
+      await loadOrders();
       setItemName("");
       setTotalAmount("");
-      setCreateSuccess(`Order #${createdOrder.id} created with status ${createdOrder.status}.`);
+      setCreateSuccess("Order created successfully.");
     } catch (requestError) {
       setCreateError(getErrorMessage(requestError));
     } finally {
@@ -136,30 +198,50 @@ export default function OrdersPage() {
 
           {!isLoadingOrders && orders.length > 0 ? (
             <div className="orders-table-wrap">
-              <table className="orders-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Item Name</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Created At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="order-id">#{order.id}</td>
-                      <td>{order.itemName || "-"}</td>
-                      <td>{formatCurrency(Number(order.totalAmount))}</td>
-                      <td>
-                        <span className="status-badge">{order.status}</span>
-                      </td>
-                      <td>{formatDate(order.createdAt)}</td>
+              <div className="orders-scroll-area" onScroll={handleOrdersScroll} onWheel={handleOrdersWheel}>
+                <table className="orders-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Item Name</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Created At</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id}>
+                        <td className="order-id">#{order.id}</td>
+                        <td>{order.itemName || "-"}</td>
+                        <td>{formatCurrency(Number(order.totalAmount))}</td>
+                        <td>
+                          <span className="status-badge">{order.status}</span>
+                        </td>
+                        <td>{formatDate(order.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="muted orders-visible-count">
+                Showing {orders.length} of {Math.max(totalOrders, orders.length)} orders.
+              </p>
+
+              {isLoadingMore ? (
+                <p className="muted orders-scroll-hint">Loading more orders...</p>
+              ) : null}
+
+              {!isLoadingMore && hasMoreOrders ? (
+                <div className="orders-scroll-hint">
+                  Scroll down to load more orders...
+                </div>
+              ) : null}
+
+              {!isLoadingMore && !hasMoreOrders ? (
+                <p className="muted orders-scroll-hint">All orders are displayed.</p>
+              ) : null}
             </div>
           ) : null}
         </Card>
