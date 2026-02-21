@@ -29,7 +29,7 @@ export default function AppLayout() {
 
           <div className="header-user">{user?.email}</div>
 
-          <Button variant="outline" onClick={logout}>
+          <Button variant="outline" onClick={() => void logout()}>
             Logout
           </Button>
         </div>

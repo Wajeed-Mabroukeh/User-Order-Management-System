@@ -22,7 +22,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request) {
         String email = normalizeEmail(request.getEmail());
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email is already registered");
@@ -34,11 +34,10 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
-        String token = jwtService.generateToken(savedUser, savedUser.getId());
-        return AuthResponse.fromUser(savedUser, token, jwtService.getJwtExpirationMs());
+        return createAuthResult(savedUser);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResult login(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
         try {
             authenticationManager.authenticate(
@@ -50,11 +49,18 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
+        return createAuthResult(user);
+    }
+
+    private AuthResult createAuthResult(User user) {
         String token = jwtService.generateToken(user, user.getId());
-        return AuthResponse.fromUser(user, token, jwtService.getJwtExpirationMs());
+        return new AuthResult(AuthResponse.fromUser(user), token);
     }
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase();
+    }
+
+    public record AuthResult(AuthResponse response, String token) {
     }
 }

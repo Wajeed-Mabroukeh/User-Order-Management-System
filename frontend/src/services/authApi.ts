@@ -13,5 +13,10 @@ export const authApi = {
       method: "POST",
       body: payload
     });
+  },
+  logout() {
+    return httpRequest<void>("/auth/logout", {
+      method: "POST"
+    });
   }
 };

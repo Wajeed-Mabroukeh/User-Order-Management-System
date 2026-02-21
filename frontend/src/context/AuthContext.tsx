@@ -1,15 +1,15 @@
-import { createContext, ReactNode, useMemo, useState } from "react";
+import { createContext, ReactNode, useEffect, useMemo, useState } from "react";
 import { authApi } from "../services/authApi";
+import { userApi } from "../services/userApi";
 import { AuthResponse, AuthenticatedUser, LoginRequest, RegisterRequest } from "../types/auth";
 
 interface AuthContextValue {
-  token: string | null;
   user: AuthenticatedUser | null;
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   login: (payload: LoginRequest) => Promise<void>;
   register: (payload: RegisterRequest) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -19,12 +19,10 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const setSessionFromAuthResponse = (response: AuthResponse) => {
-    setToken(response.accessToken);
     setUser({
       id: response.userId,
       name: response.name,
@@ -53,22 +51,59 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+    }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateSession = async () => {
+      setIsAuthLoading(true);
+      try {
+        const profile = await userApi.getMyProfile();
+        if (!isMounted) {
+          return;
+        }
+        setUser({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: "USER"
+        });
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setUser(null);
+      } finally {
+        if (isMounted) {
+          setIsAuthLoading(false);
+        }
+      }
+    };
+
+    void hydrateSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      token,
       user,
-      isAuthenticated: Boolean(token),
+      isAuthenticated: Boolean(user),
       isAuthLoading,
       login,
       register,
       logout
     }),
-    [token, user, isAuthLoading]
+    [user, isAuthLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

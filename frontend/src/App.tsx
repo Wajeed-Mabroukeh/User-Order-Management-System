@@ -1,13 +1,19 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/navigation/ProtectedRoute";
+import Loader from "./components/ui/Loader";
 import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import OrdersPage from "./pages/OrdersPage";
 import ProfilePage from "./pages/ProfilePage";
 
 function RootRedirect() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthLoading } = useAuth();
+
+  if (isAuthLoading) {
+    return <Loader label="Checking session..." />;
+  }
+
   return <Navigate to={isAuthenticated ? "/profile" : "/login"} replace />;
 }
 

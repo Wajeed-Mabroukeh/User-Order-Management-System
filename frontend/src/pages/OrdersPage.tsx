@@ -4,7 +4,6 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import InputField from "../components/ui/InputField";
 import Loader from "../components/ui/Loader";
-import { useAuth } from "../hooks/useAuth";
 import { getErrorMessage } from "../services/http";
 import { orderApi } from "../services/orderApi";
 import { Order } from "../types/order";
@@ -25,7 +24,6 @@ function formatCurrency(value: number): string {
 }
 
 export default function OrdersPage() {
-  const { token } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [itemName, setItemName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
@@ -38,13 +36,10 @@ export default function OrdersPage() {
   const [createSuccess, setCreateSuccess] = useState("");
 
   const loadOrders = async () => {
-    if (!token) {
-      return;
-    }
     setIsLoadingOrders(true);
     setLoadError("");
     try {
-      const response = await orderApi.getMyOrders(token);
+      const response = await orderApi.getMyOrders();
       setOrders(response);
     } catch (requestError) {
       setLoadError(getErrorMessage(requestError));
@@ -55,13 +50,10 @@ export default function OrdersPage() {
 
   useEffect(() => {
     void loadOrders();
-  }, [token]);
+  }, []);
 
   const handleCreateOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
 
     setCreateError("");
     setCreateSuccess("");
@@ -81,7 +73,7 @@ export default function OrdersPage() {
 
     setIsCreatingOrder(true);
     try {
-      const createdOrder = await orderApi.createOrder(token, {
+      const createdOrder = await orderApi.createOrder({
         itemName: normalizedItemName,
         totalAmount: amount
       });

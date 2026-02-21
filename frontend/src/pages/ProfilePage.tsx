@@ -9,19 +9,16 @@ import { userApi } from "../services/userApi";
 import { UserProfile } from "../types/user";
 
 export default function ProfilePage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadProfile = async () => {
-    if (!token) {
-      return;
-    }
     setIsLoading(true);
     setError("");
     try {
-      const response = await userApi.getMyProfile(token);
+      const response = await userApi.getMyProfile();
       setProfile(response);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
@@ -32,7 +29,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     void loadProfile();
-  }, [token]);
+  }, []);
 
   return (
     <section className="page">

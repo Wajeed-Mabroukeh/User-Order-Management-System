@@ -17,7 +17,6 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 interface RequestOptions<TBody> {
   method?: HttpMethod;
-  token?: string | null;
   body?: TBody;
   headers?: HeadersInit;
   signal?: AbortSignal;
@@ -57,16 +56,12 @@ export async function httpRequest<TResponse, TBody = unknown>(
   path: string,
   options: RequestOptions<TBody> = {}
 ): Promise<TResponse> {
-  const { method = "GET", token = null, body, headers, signal } = options;
+  const { method = "GET", body, headers, signal } = options;
   const requestHeaders = new Headers(headers);
   requestHeaders.set("Accept", "application/json");
 
   if (body !== undefined) {
     requestHeaders.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
   let response: Response;
@@ -75,6 +70,7 @@ export async function httpRequest<TResponse, TBody = unknown>(
       method,
       headers: requestHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: "include",
       signal
     });
   } catch {
