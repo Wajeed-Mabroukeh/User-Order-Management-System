@@ -1,44 +1,43 @@
-# Frontend Dashboard (React + TypeScript)
+# Frontend Dashboard (React + TypeScript + Vite)
 
-## Run
+## Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-API base URL defaults to:
+Frontend URL: `http://localhost:5173`
 
-```
-http://localhost:8080/api
+## API Configuration
+
+Default API base URL is:
+
+```bash
+/api
 ```
 
-You can change it with:
+In local development, Vite proxy forwards `/api` requests to `http://localhost:8080`.
 
-```
+Optional override in `.env`:
+
+```bash
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-## Implemented Requirements
+## Features
 
-- Login page with email/password, loading state, and error handling
-- Protected routes for authenticated users only
-- Profile page showing name, email, and role
-- Orders page showing order list, order creation form, loading states, and errors
-- API service layer (`src/services`)
-- Global auth state using React context (`src/context/AuthContext.tsx`)
-- Reusable components (`src/components/ui`)
-- Type-safe DTO models (`src/types`)
+- Login and registration flows
+- Protected routes with session hydration
+- Profile page (`/profile`)
+- Orders list and create form (`/orders`)
+- Shared API layer (`src/services`)
+- Global auth context (`src/context/AuthContext.tsx`)
+- Type-safe models (`src/types`)
 
-## Token Storage Strategy
+## Authentication Behavior
 
-Current implementation stores the JWT token in **memory only** (React state):
-
-- Pros: token is not persisted to disk (`localStorage`/`sessionStorage`), which reduces long-term XSS exposure.
-- Cons: token is lost on page refresh; user logs in again.
-
-Alternative for production:
-
-- Use **httpOnly secure cookies** set by backend.
-- Pros: token inaccessible from JavaScript; stronger protection against token theft.
-- Cons: requires backend cookie configuration and CSRF strategy.
+- Backend issues JWT in an `HttpOnly` cookie.
+- Frontend sends requests with `credentials: include`.
+- On app load, frontend calls `/api/users/me` to restore session state.
+- Logout clears the auth cookie via backend endpoint.

@@ -1,78 +1,62 @@
 # User Order Management System
 
-Full-stack user and order management dashboard:
-- Backend: Spring Boot + Spring Security + JPA + MySQL
-- Frontend: React + TypeScript + Vite
+Full-stack user and order management dashboard.
 
-## Figma Design
+- Backend: Spring Boot, Spring Security, JPA, MySQL
+- Frontend: React, TypeScript, Vite
+- Auth: JWT in `HttpOnly` cookie
 
-Design reference:
+## Design Reference
+
+Figma:
 `https://www.figma.com/make/uxFrTPdB2fCvok1jcNkqEH/User---Order-Management-System?t=EOAugVjxwwtk0CMv-1&preview-route=%2Forders`
 
-## Setup Instructions
+## Features
 
-### Prerequisites
+- Register, login, and logout
+- Protected routes in frontend
+- Current user profile (`/api/users/me`)
+- Create and list orders for authenticated user (`/api/orders`)
+- Dockerized backend, frontend, and MySQL setup
 
+## Project Structure
+
+```text
+backend/                 Spring Boot API
+frontend/                React dashboard
+docker-compose.yml       Full Docker stack
+Demo & ScreenShots/      Demo screenshots
+ERD Diagram/             Database design
+```
+
+## Prerequisites
+
+- Git
 - Java 21
 - Node.js 18+ and npm
-- MySQL 8+
-- Git
+- MySQL 8+ (for local run)
+- Docker Desktop (optional, for container run)
 
-### Install dependencies
+## Option A: Run Locally
 
-```bash
-# backend dependencies are handled by Maven wrapper on first run
+### 1) Database
 
-cd frontend
-npm install
-```
-
-## Environment Variables
-
-### Backend (`backend/src/main/resources/application.properties`)
-
-Backend supports environment overrides for DB, JWT, and port.
-
-| Variable | Default value | Purpose |
-| --- | --- | --- |
-| `DB_URL` | `jdbc:mysql://localhost:3307/userordermanagment` | MySQL JDBC URL |
-| `DB_USERNAME` | `root` | MySQL username |
-| `DB_PASSWORD` | `1234` | MySQL password |
-| `JWT_SECRET` | `mySecretKeyForJWTTokenGenerationAndValidation2024` | JWT signing secret |
-| `JWT_EXPIRATION` | `86400000` | JWT expiration in ms |
-| `JWT_COOKIE_NAME` | `access_token` | Auth cookie name |
-| `JWT_COOKIE_SECURE` | `false` (`true` in `prod` profile) | Require HTTPS for auth cookie |
-| `JWT_COOKIE_SAME_SITE` | `Lax` | Cookie SameSite mode (`None` for cross-site + HTTPS) |
-| `JWT_COOKIE_PATH` | `/` | Cookie path scope |
-| `PORT` | `8080` | Backend HTTP port |
-
-### Frontend
-
-| Variable | Default value | Purpose |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | `/api` | Base URL for API requests. In dev, Vite proxy forwards `/api` to backend. |
-
-Create `frontend/.env` only if you want to override the default:
-
-```bash
-VITE_API_BASE_URL=http://localhost:8080/api
-```
-
-## Database Setup (MySQL)
-
-1. Start MySQL server.
-2. Create database:
+Start local MySQL and create database:
 
 ```sql
 CREATE DATABASE userordermanagment;
 ```
 
-3. Update credentials if needed using `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`.
-4. Tables are created/updated automatically by Hibernate (`spring.jpa.hibernate.ddl-auto=update`).
+Default local backend DB connection:
+- Host: `localhost`
+- Port: `3307`
+- Database: `userordermanagment`
+- Username: `root`
+- Password: `1234`
 
-## Run Commands
+If your local MySQL uses a different port (for example `3306`), override `DB_URL`.
 
-### 1) Run backend
+### 2) Backend
 
 Windows:
 
@@ -100,50 +84,104 @@ cd backend
 
 Backend URL: `http://localhost:8080`
 
-### 2) Run frontend
+### 3) Frontend
 
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
 Frontend URL: `http://localhost:5173`
 
-## Docker (Frontend + Backend + MySQL)
+## Option B: Run with Docker
 
-Run everything with Docker Compose:
+Run all services:
 
 ```bash
 docker compose up --build -d
 ```
 
-Stop and remove containers:
+Stop services:
 
 ```bash
 docker compose down
 ```
 
-Stop and remove containers + database volume:
+Stop and remove DB volume:
 
 ```bash
 docker compose down -v
 ```
 
-Services after startup:
+Docker service endpoints:
 
 - Frontend (Nginx): `http://localhost:5173`
 - Backend API: `http://localhost:8080`
 - MySQL host port: `3308` (container `3306`)
 
-Notes:
+Note:
+- Local MySQL (`3307`) and Docker MySQL (`3308`) can run without port conflict.
 
-- Frontend proxies `/api` to backend through Nginx in container network.
-- Current compose defaults set `JWT_COOKIE_SECURE=false` for local HTTP development.
-- For real production behind HTTPS, set `JWT_COOKIE_SECURE=true` and update `JWT_COOKIE_SAME_SITE` as needed.
+## Environment Variables
 
-## Assumptions / Notes
+### Backend
 
-- API base path is `/api` (example: `/api/auth/login`, `/api/auth/register`).
-- Auth token is stored in an `HttpOnly` cookie set by backend.
-- `Role` displayed in UI is currently a frontend default (`USER`), not persisted in backend `users` table.
-- MySQL default port in this project is `3307`; if your MySQL runs on `3306`, override `DB_URL`.
+Configured in `backend/src/main/resources/application.properties` (and optional production overrides in `application-prod.properties`).
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_URL` | `jdbc:mysql://localhost:3307/userordermanagment` | JDBC connection URL |
+| `DB_USERNAME` | `root` | DB username |
+| `DB_PASSWORD` | `1234` | DB password |
+| `JWT_SECRET` | `mySecretKeyForJWTTokenGenerationAndValidation2024` | JWT signing secret |
+| `JWT_EXPIRATION` | `86400000` | JWT expiration in ms |
+| `JWT_COOKIE_NAME` | `access_token` | Auth cookie name |
+| `JWT_COOKIE_SECURE` | `false` (`true` in `prod`) | Require HTTPS for auth cookie |
+| `JWT_COOKIE_SAME_SITE` | `Lax` | Cookie SameSite mode |
+| `JWT_COOKIE_PATH` | `/` | Cookie path |
+| `PORT` | `8080` | Backend port |
+
+### Frontend
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | `/api` | API base path. In dev, Vite proxy forwards `/api` to `http://localhost:8080`. |
+
+Optional override in `frontend/.env`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+## API Summary
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/users/me`
+- `GET /api/orders`
+- `POST /api/orders`
+
+## Troubleshooting
+
+- Backend fails with `JAVA_HOME is not defined correctly`:
+  set `JAVA_HOME` to JDK 21 before `mvnw.cmd spring-boot:run`.
+- Docker MySQL port error (`3308` already in use):
+  stop the process using `3308`, or change host mapping in `docker-compose.yml`.
+- Unauthorized (`401`) on backend root path:
+  expected behavior. Use the documented `/api/...` endpoints with authentication flow.
+
+## Recent Updates
+
+- Added Docker support (`backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`).
+- Set Docker MySQL host port to `3308` to avoid conflict with local MySQL on `3307`.
+- Switched auth flow to JWT in `HttpOnly` cookie with backend logout cookie clear.
+- Updated frontend API client to use `credentials: include` for cookie-based requests.
+- Added production cookie overrides in `backend/src/main/resources/application-prod.properties`.
+
+## Final Delivery Notes
+
+- Authentication session uses cookie-based auth flow (`credentials: include` in frontend).
+- Frontend proxy is configured for `/api` in both Vite (local) and Nginx (Docker).
+- Screenshots are available in `Demo & ScreenShots`.
