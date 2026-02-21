@@ -47,16 +47,55 @@ Start local MySQL and create database:
 CREATE DATABASE userordermanagment;
 ```
 
-Default local backend DB connection:
-- Host: `localhost`
-- Port: `3307`
-- Database: `userordermanagment`
-- Username: `root`
-- Password: `1234`
+Database connection values are read from `backend/.env` (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`).
 
-If your local MySQL uses a different port (for example `3306`), override `DB_URL`.
+### 2) Create Backend `.env`
 
-### 2) Backend
+The backend reads local environment values from `backend/.env`.
+
+Create it from the template:
+
+Windows (PowerShell):
+
+```bash
+Copy-Item backend/.env.template backend/.env
+```
+
+Windows (CMD):
+
+```bash
+copy backend\.env.template backend\.env
+```
+
+macOS/Linux:
+
+```bash
+cp backend/.env.template backend/.env
+```
+
+Then edit `backend/.env` with your local values (DB host/port/user/password, JWT secret, etc.).
+
+Important:
+- Keep `backend/.env` private and never commit real secrets.
+
+Example `backend/.env` (use your own values):
+
+```bash
+DB_URL=jdbc:mysql://<DB_HOST>:<DB_PORT>/<DB_NAME>
+DB_USERNAME=<DB_USERNAME>
+DB_PASSWORD=<DB_PASSWORD>
+
+JWT_SECRET=<JWT_SECRET>
+JWT_EXPIRATION=<JWT_EXPIRATION_MS>
+JWT_COOKIE_NAME=access_token
+JWT_COOKIE_SECURE=<true_or_false>
+JWT_COOKIE_SAME_SITE=<Lax_or_None_or_Strict>
+JWT_COOKIE_PATH=/
+
+PORT=<BACKEND_PORT>
+```
+
+### 3) Backend
 
 Windows:
 
@@ -82,9 +121,9 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-Backend URL: `http://localhost:8080`
+Backend bind port is controlled by `PORT` in `backend/.env`.
 
-### 3) Frontend
+### 4) Frontend
 
 ```bash
 cd frontend
@@ -92,7 +131,7 @@ npm install
 npm run dev
 ```
 
-Frontend URL: `http://localhost:5173`
+Frontend dev URL is shown in terminal when Vite starts.
 
 ## Option B: Run with Docker
 
@@ -114,44 +153,40 @@ Stop and remove DB volume:
 docker compose down -v
 ```
 
-Docker service endpoints:
-
-- Frontend (Nginx): `http://localhost:5173`
-- Backend API: `http://localhost:8080`
-- MySQL host port: `3308` (container `3306`)
-
-Note:
-- Local MySQL (`3307`) and Docker MySQL (`3308`) can run without port conflict.
+Docker service URLs and port mappings are defined in `docker-compose.yml`.
 
 ## Environment Variables
 
 ### Backend
 
-Configured in `backend/src/main/resources/application.properties` (and optional production overrides in `application-prod.properties`).
+Configured in `backend/src/main/resources/application.properties` and loaded from `backend/.env` (via `spring.config.import`).
 
-| Variable | Default | Purpose |
+| Variable | Source | Purpose |
 | --- | --- | --- |
-| `DB_URL` | `jdbc:mysql://localhost:3307/userordermanagment` | JDBC connection URL |
-| `DB_USERNAME` | `root` | DB username |
-| `DB_PASSWORD` | `1234` | DB password |
-| `JWT_SECRET` | `mySecretKeyForJWTTokenGenerationAndValidation2024` | JWT signing secret |
-| `JWT_EXPIRATION` | `86400000` | JWT expiration in ms |
-| `JWT_COOKIE_NAME` | `access_token` | Auth cookie name |
-| `JWT_COOKIE_SECURE` | `false` (`true` in `prod`) | Require HTTPS for auth cookie |
-| `JWT_COOKIE_SAME_SITE` | `Lax` | Cookie SameSite mode |
-| `JWT_COOKIE_PATH` | `/` | Cookie path |
-| `PORT` | `8080` | Backend port |
+| `DB_URL` | `backend/.env` | JDBC connection URL |
+| `DB_USERNAME` | `backend/.env` | DB username |
+| `DB_PASSWORD` | `backend/.env` | DB password |
+| `JWT_SECRET` | `backend/.env` | JWT signing secret |
+| `JWT_EXPIRATION` | `backend/.env` | JWT expiration in ms |
+| `JWT_COOKIE_NAME` | `backend/.env` | Auth cookie name |
+| `JWT_COOKIE_SECURE` | `backend/.env` | Require HTTPS for auth cookie |
+| `JWT_COOKIE_SAME_SITE` | `backend/.env` | Cookie SameSite mode |
+| `JWT_COOKIE_PATH` | `backend/.env` | Cookie path |
+| `PORT` | `backend/.env` | Backend port |
+
+Note:
+- These backend variables are required for local run because application properties use env placeholders without fallback defaults.
 
 ### Frontend
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | `/api` | API base path. In dev, Vite proxy forwards `/api` to `http://localhost:8080`. |
+| `VITE_API_BASE_URL` | `/api` | API base path. In dev, Vite proxy forwards `/api` to the backend service. |
 
 Optional override in `frontend/.env`:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_BASE_URL=http://<BACKEND_HOST>:<BACKEND_PORT>/api
 ```
 
 ## API Summary
@@ -162,7 +197,6 @@ VITE_API_BASE_URL=http://localhost:8080/api
 - `GET /api/users/me`
 - `GET /api/orders`
 - `POST /api/orders`
-
 
 ## Final Delivery Notes
 
