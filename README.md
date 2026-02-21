@@ -163,14 +163,6 @@ VITE_API_BASE_URL=http://localhost:8080/api
 - `GET /api/orders`
 - `POST /api/orders`
 
-## Troubleshooting
-
-- Backend fails with `JAVA_HOME is not defined correctly`:
-  set `JAVA_HOME` to JDK 21 before `mvnw.cmd spring-boot:run`.
-- Docker MySQL port error (`3308` already in use):
-  stop the process using `3308`, or change host mapping in `docker-compose.yml`.
-- Unauthorized (`401`) on backend root path:
-  expected behavior. Use the documented `/api/...` endpoints with authentication flow.
 
 ## Recent Updates
 
