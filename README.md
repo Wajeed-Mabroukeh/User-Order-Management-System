@@ -102,7 +102,7 @@ Get-Content .env | ForEach-Object {
   }
 }
 $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
-mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
 Windows (production profile):
@@ -117,7 +117,7 @@ Get-Content .env | ForEach-Object {
 }
 $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
 $env:SPRING_PROFILES_ACTIVE="prod"
-mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
 Backend bind port is controlled by `PORT` in `backend/.env`.
