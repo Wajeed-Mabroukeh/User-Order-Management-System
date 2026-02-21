@@ -19,7 +19,8 @@ public class OrderService {
     public OrderResponse createOrder(CreateOrderRequest request, User authenticatedUser) {
         Order order = new Order();
         order.setTotalAmount(request.getTotalAmount());
-        order.setStatus(request.getStatus().trim().toUpperCase());
+        order.setItemName(request.getItemName().trim());
+        order.setStatus("PENDING");
         order.setUser(authenticatedUser);
 
         Order savedOrder = orderRepository.save(order);

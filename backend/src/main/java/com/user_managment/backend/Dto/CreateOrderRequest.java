@@ -15,7 +15,7 @@ public class CreateOrderRequest {
     @DecimalMin(value = "0.01", message = "Total amount must be greater than 0")
     private BigDecimal totalAmount;
 
-    @NotBlank(message = "Status is required")
-    @Size(max = 30, message = "Status must be at most 30 characters")
-    private String status;
+    @NotBlank(message = "Item name is required")
+    @Size(max = 100, message = "Item name must be at most 100 characters")
+    private String itemName;
 }

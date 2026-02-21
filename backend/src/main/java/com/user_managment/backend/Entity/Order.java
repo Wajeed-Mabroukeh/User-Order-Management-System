@@ -23,6 +23,9 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "item_name", length = 100)
+    private String itemName;
+
     @Column(nullable = false)
     private String status;
 
