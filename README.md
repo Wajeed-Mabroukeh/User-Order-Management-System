@@ -67,12 +67,6 @@ Windows (CMD):
 copy backend\.env.template backend\.env
 ```
 
-macOS/Linux:
-
-```bash
-cp backend/.env.template backend/.env
-```
-
 Then edit `backend/.env` with your local values (DB host/port/user/password, JWT secret, etc.).
 
 Important:
@@ -97,28 +91,33 @@ PORT=<BACKEND_PORT>
 
 ### 3) Backend
 
-Windows:
+Windows (PowerShell):
 
-```bash
+```powershell
 cd backend
-set JAVA_HOME=C:\Program Files\Java\jdk-21
+Get-Content .env | ForEach-Object {
+  if ($_ -and $_ -notmatch '^\s*#') {
+    $k, $v = $_ -split '=', 2
+    Set-Item -Path "Env:$($k.Trim())" -Value $v.Trim()
+  }
+}
+$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
 mvnw.cmd spring-boot:run
 ```
 
 Windows (production profile):
 
-```bash
+```powershell
 cd backend
-set JAVA_HOME=C:\Program Files\Java\jdk-21
-set SPRING_PROFILES_ACTIVE=prod
+Get-Content .env | ForEach-Object {
+  if ($_ -and $_ -notmatch '^\s*#') {
+    $k, $v = $_ -split '=', 2
+    Set-Item -Path "Env:$($k.Trim())" -Value $v.Trim()
+  }
+}
+$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
+$env:SPRING_PROFILES_ACTIVE="prod"
 mvnw.cmd spring-boot:run
-```
-
-macOS/Linux:
-
-```bash
-cd backend
-./mvnw spring-boot:run
 ```
 
 Backend bind port is controlled by `PORT` in `backend/.env`.
