@@ -164,16 +164,9 @@ VITE_API_BASE_URL=http://localhost:8080/api
 - `POST /api/orders`
 
 
-## Recent Updates
-
-- Added Docker support (`backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`).
-- Set Docker MySQL host port to `3308` to avoid conflict with local MySQL on `3307`.
-- Switched auth flow to JWT in `HttpOnly` cookie with backend logout cookie clear.
-- Updated frontend API client to use `credentials: include` for cookie-based requests.
-- Added production cookie overrides in `backend/src/main/resources/application-prod.properties`.
-
 ## Final Delivery Notes
 
 - Authentication session uses cookie-based auth flow (`credentials: include` in frontend).
 - Frontend proxy is configured for `/api` in both Vite (local) and Nginx (Docker).
 - Screenshots are available in `Demo & ScreenShots`.
+- Auth flow to JWT in `HttpOnly` cookie with backend logout cookie clear
